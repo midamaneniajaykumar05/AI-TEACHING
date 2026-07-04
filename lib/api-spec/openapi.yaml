@@ -1,0 +1,431 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: TeacherGPT API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: conversations
+    description: Chat conversation management
+  - name: progress
+    description: Student progress tracking
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /conversations/{id}/messages:
+    post:
+      operationId: sendMessage
+      tags: [conversations]
+      summary: Send a message and receive a streaming AI teacher response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+
+  /progress:
+    get:
+      operationId: getProgress
+      tags: [progress]
+      summary: Get overall student progress
+      responses:
+        "200":
+          description: Progress overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressOverview"
+
+  /progress/topics:
+    get:
+      operationId: listTopicProgress
+      tags: [progress]
+      summary: List progress for each topic
+      responses:
+        "200":
+          description: List of topic progress entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicProgress"
+    post:
+      operationId: upsertTopicProgress
+      tags: [progress]
+      summary: Create or update progress for a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicProgressInput"
+      responses:
+        "200":
+          description: Updated topic progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicProgress"
+
+  /quiz-results:
+    get:
+      operationId: listQuizResults
+      tags: [progress]
+      summary: List recent quiz results
+      responses:
+        "200":
+          description: List of quiz results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizResult"
+    post:
+      operationId: recordQuizResult
+      tags: [progress]
+      summary: Record a quiz result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizResultInput"
+      responses:
+        "201":
+          description: Recorded quiz result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+
+  /ai-status:
+    get:
+      operationId: getAiStatus
+      tags: [health]
+      summary: Check if the OpenAI API key is configured
+      responses:
+        "200":
+          description: AI configuration status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiStatus"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    AiStatus:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        message:
+          type: string
+      required:
+        - configured
+        - message
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        topic:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+        - updatedAt
+
+    ConversationInput:
+      type: object
+      properties:
+        title:
+          type: string
+        topic:
+          type: string
+      required:
+        - title
+
+    ConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        topic:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      required:
+        - id
+        - title
+        - createdAt
+        - updatedAt
+        - messages
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    TopicProgress:
+      type: object
+      properties:
+        id:
+          type: integer
+        topic:
+          type: string
+        mastery:
+          type: integer
+        status:
+          type: string
+        lessonsCompleted:
+          type: integer
+        quizzesTaken:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - topic
+        - mastery
+        - status
+        - lessonsCompleted
+        - quizzesTaken
+        - updatedAt
+
+    TopicProgressInput:
+      type: object
+      properties:
+        topic:
+          type: string
+        mastery:
+          type: integer
+        status:
+          type: string
+        lessonsCompleted:
+          type: integer
+        quizzesTaken:
+          type: integer
+      required:
+        - topic
+
+    QuizResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        topic:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - topic
+        - score
+        - totalQuestions
+        - createdAt
+
+    QuizResultInput:
+      type: object
+      properties:
+        topic:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+      required:
+        - topic
+        - score
+        - totalQuestions
+
+    ProgressOverview:
+      type: object
+      properties:
+        totalTopics:
+          type: integer
+        masteredTopics:
+          type: integer
+        averageMastery:
+          type: integer
+        totalLessons:
+          type: integer
+        totalQuizzes:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicProgress"
+      required:
+        - totalTopics
+        - masteredTopics
+        - averageMastery
+        - totalLessons
+        - totalQuizzes
+        - recentActivity
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

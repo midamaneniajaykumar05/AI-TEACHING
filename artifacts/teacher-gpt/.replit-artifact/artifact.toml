@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "TeacherGPT"
+version = "1.0.0"
+id = "artifacts/teacher-gpt"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21374
+
+[services.development]
+run = "pnpm --filter @workspace/teacher-gpt run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/teacher-gpt", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/teacher-gpt/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21374"
+BASE_PATH = "/"
