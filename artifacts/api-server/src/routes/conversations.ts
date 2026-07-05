@@ -4,8 +4,9 @@ import {
   conversationsTable,
   messages,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { openai, isConfigured } from "@workspace/integrations-openai-ai-server";
+import { requireAuth } from "../middlewares/auth.js";
 
 const TEACHER_SYSTEM_PROMPT = `You are TeacherGPT, an intelligent AI teacher whose goal is not to answer questions directly, but to ensure the student truly understands a concept.
 
@@ -60,13 +61,16 @@ Python Full Stack Specialization — teach topics in this order:
 Python Fundamentals → OOP → Data Structures & Algorithms → Git & GitHub → SQL → PostgreSQL → Flask → FastAPI → Django → REST APIs → Authentication → JWT → Redis → Celery → Docker → Linux → Testing → CI/CD → AWS → Deployment → System Design → Microservices → Design Patterns → Security → Performance Optimization → AI Integration → LangChain → Vector Databases → RAG → Prompt Engineering → MCP → Agentic AI`;
 
 const router = Router();
+router.use(requireAuth);
 
 // GET /conversations
 router.get("/", async (req, res) => {
   try {
+    const userId = req.user!.sub;
     const conversations = await db
       .select()
       .from(conversationsTable)
+      .where(eq(conversationsTable.userId, userId))
       .orderBy(desc(conversationsTable.updatedAt));
     res.json(conversations);
   } catch (err) {
@@ -78,6 +82,7 @@ router.get("/", async (req, res) => {
 // POST /conversations
 router.post("/", async (req, res) => {
   try {
+    const userId = req.user!.sub;
     const { title, topic } = req.body;
     if (!title) {
       res.status(400).json({ error: "title is required" });
@@ -85,7 +90,7 @@ router.post("/", async (req, res) => {
     }
     const [conv] = await db
       .insert(conversationsTable)
-      .values({ title, topic: topic || null })
+      .values({ userId, title, topic: topic || null })
       .returning();
     res.status(201).json(conv);
   } catch (err) {
@@ -97,11 +102,12 @@ router.post("/", async (req, res) => {
 // GET /conversations/:id
 router.get("/:id", async (req, res) => {
   try {
+    const userId = req.user!.sub;
     const id = parseInt(req.params.id);
     const [conv] = await db
       .select()
       .from(conversationsTable)
-      .where(eq(conversationsTable.id, id));
+      .where(and(eq(conversationsTable.id, id), eq(conversationsTable.userId, userId)));
     if (!conv) {
       res.status(404).json({ error: "Conversation not found" });
       return;
@@ -121,7 +127,16 @@ router.get("/:id", async (req, res) => {
 // DELETE /conversations/:id
 router.delete("/:id", async (req, res) => {
   try {
+    const userId = req.user!.sub;
     const id = parseInt(req.params.id);
+    const [existing] = await db
+      .select({ id: conversationsTable.id })
+      .from(conversationsTable)
+      .where(and(eq(conversationsTable.id, id), eq(conversationsTable.userId, userId)));
+    if (!existing) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
     await db
       .delete(conversationsTable)
       .where(eq(conversationsTable.id, id));

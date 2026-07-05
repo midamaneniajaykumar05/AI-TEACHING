@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const conversationsTable = pgTable("conversations", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id"), // nullable to keep existing data valid during migration
   title: text("title").notNull(),
   topic: text("topic"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

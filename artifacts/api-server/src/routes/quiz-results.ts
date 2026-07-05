@@ -2,8 +2,10 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { quizResultsTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
+import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
+router.use(requireAuth);
 
 // GET /quiz-results
 router.get("/", async (req, res) => {

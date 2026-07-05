@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import authRouter from "./auth";
 import conversationsRouter from "./conversations";
 import progressRouter from "./progress";
 import quizResultsRouter from "./quiz-results";
@@ -8,6 +9,7 @@ import { isConfigured } from "@workspace/integrations-openai-ai-server";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use("/auth", authRouter);
 router.use("/conversations", conversationsRouter);
 router.use("/progress", progressRouter);
 router.use("/quiz-results", quizResultsRouter);

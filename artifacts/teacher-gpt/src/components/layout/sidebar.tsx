@@ -5,18 +5,21 @@ import {
   LayoutDashboard, 
   BarChart3, 
   BookOpen, 
-  Settings,
-  Plus
+  LogOut,
+  Plus,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useListConversations, useCreateConversation } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { data: conversations, isLoading } = useListConversations();
   const createConv = useCreateConversation();
+  const { user, logout } = useAuth();
 
   const handleNewChat = () => {
     createConv.mutate({ data: { title: "New Conversation" } }, {
@@ -24,6 +27,11 @@ export function Sidebar() {
         setLocation(`/chat/${data.id}`);
       }
     });
+  };
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
   };
 
   const navItems = [
@@ -103,10 +111,25 @@ export function Sidebar() {
         </div>
       </ScrollArea>
       
+      {/* User info + logout */}
       <div className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground cursor-pointer transition-colors">
-          <Settings size={16} />
-          Settings
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md">
+          <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
+            <User size={14} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {user?.username ?? "Student"}
+            </p>
+            <p className="text-xs text-muted-foreground">Learner</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
     </div>

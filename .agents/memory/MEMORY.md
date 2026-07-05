@@ -1,0 +1,3 @@
+- [Auth architecture](auth-architecture.md) — JWT+scrypt via Node.js built-ins only; no bcryptjs/jsonwebtoken; SESSION_SECRET required at startup.
+- [Environment instability](environment-instability.md) — shell/DB/workflow tools all fail with ENOTCONN due to Node 24 / libuv thread-creation issue; pnpm crashes on any install attempt.
+- [Workflow setup needed](workflow-setup.md) — artifacts exist on disk but aren't registered; workflows must be configured via configureWorkflow() when env recovers.

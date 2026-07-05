@@ -2,8 +2,10 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicProgressTable, quizResultsTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
+import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
+router.use(requireAuth);
 
 // GET /progress — overview
 router.get("/", async (req, res) => {

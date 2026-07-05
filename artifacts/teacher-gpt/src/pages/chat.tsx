@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { AppShell } from "@/components/layout/app-shell";
 import { useGetConversation, useGetAiStatus } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,7 @@ export default function Chat() {
   const params = useParams();
   const id = Number(params.id);
   const [_, setLocation] = useLocation();
+  const { token } = useAuth();
   
   const { data: aiStatus } = useGetAiStatus();
   const isAiConfigured = aiStatus?.configured;
@@ -79,7 +81,10 @@ export default function Chat() {
 
       const res = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/conversations/${id}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ content: userMessage }),
       });
 
